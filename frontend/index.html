@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <title>מערכת תורנות ניקיון כיתתית</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>🧹 מערכת תורנות ניקיון</h1>
+    <p class="subtitle">הכנס שמות ולחץ על כפתור ליצירת חלוקה שבועית</p>
+
+    <div class="card">
+        <label for="names">רשימת תורנים (שם בכל שורה)</label>
+        <textarea id="names" placeholder="דוד
+יוסי
+משה
+אברהם"></textarea>
+
+        <div class="date-selection">
+            <label for="start-date">תאריך התחלה:</label>
+            <input type="date" id="start-date">
+
+            <label for="end-date">תאריך סיום:</label>
+            <input type="date" id="end-date">
+        </div>
+
+        <button onclick="generate()">צור חלוקה</button>
+    </div>
+
+    <div class="card">
+        <h2>📅 תוצאות</h2>
+        <pre id="output">עדיין לא נוצרה חלוקה</pre>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
