@@ -18,19 +18,6 @@ if not os.path.exists("cleaning.db"):
 def health():
     return {"status": "ok"}
 
-@app.route("/generate", methods=["POST"])
-def generate():
-    data = request.json
-    names = data.get("names", [])
-    start_date = data.get("start_date")
-    end_date = data.get("end_date")
-    if not names or not start_date or not end_date:
-        return jsonify({"error": "Missing names or dates"}), 400
-    weeks = generate_weeks(start_date, end_date)
-    schedule = assign_cleaners(names, weeks)
-    save_schedule(schedule)
-    return jsonify(schedule)
-
 @app.route("/schedule", methods=["GET"])
 def get_schedule():
     db = get_db()
@@ -50,6 +37,7 @@ def get_schedule():
         result[week].append(name)
     return jsonify(result)
 
+# --- Route להצגת כל המשתמשים ---
 @app.route("/users", methods=["GET"])
 def get_users():
     db = get_db()
@@ -68,7 +56,46 @@ def get_users():
 
     return jsonify(users_list)
 
-# --- UNAVAILABLE ---
+# --- Route להרצת הגרלה ידנית ---
+@app.route("/generate", methods=["POST"])
+def generate():
+    data = request.json
+    names = data.get("names", [])
+    start_date = data.get("start_date")
+    end_date = data.get("end_date")
+    if not names or not start_date or not end_date:
+        return jsonify({"error": "Missing names or dates"}), 400
+    weeks = generate_weeks(start_date, end_date)
+    schedule = assign_cleaners(names, weeks)
+    save_schedule(schedule)
+    return jsonify(schedule)
+
+# --- Route להרצת הגרלה אוטומטית מהמשתמשים שנרשמו ---
+@app.route("/generate_auto", methods=["POST"])
+def generate_auto():
+    data = request.json
+    start_date = data.get("start_date")
+    end_date = data.get("end_date")
+
+    if not start_date or not end_date:
+        return jsonify({"error": "Missing start_date or end_date"}), 400
+
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT name FROM users")
+    users = [row[0] for row in cursor.fetchall()]
+    db.close()
+
+    if not users:
+        return jsonify({"error": "No users registered"}), 400
+
+    weeks = generate_weeks(start_date, end_date)
+    schedule = assign_cleaners(users, weeks)
+    save_schedule(schedule)
+
+    return jsonify(schedule)
+
+# --- Route למשתמשים שאינם זמינים ---
 @app.route("/unavailable", methods=["POST", "GET"])
 def mark_unavailable():
     if request.method == "POST":
@@ -124,7 +151,7 @@ def mark_unavailable():
 
     return jsonify({"message": message})
 
-# --- REGISTER ROUTES ---
+# --- ROUTES להרשמה ---
 @app.route("/register", methods=["GET"])
 def register_form():
     return render_template("register.html")
@@ -150,7 +177,7 @@ def register_user():
     db.close()
     return f"<h3>{message}</h3>"
 
-# --- APScheduler ---
+# --- APScheduler לשליחת התראות שבועיות ---
 scheduler = BackgroundScheduler()
 scheduler.add_job(send_weekly_notifications, 'cron', day_of_week='thu', hour=13, minute=0)
 scheduler.start()
