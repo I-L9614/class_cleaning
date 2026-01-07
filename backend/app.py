@@ -182,6 +182,11 @@ def mark_unavailable():
         return f"<h2>{message}</h2>"
     return jsonify({"message": message})
 
+@app.route("/admin")
+def admin_panel():
+    return render_template("admin.html")
+
+
 # --- APScheduler לשליחת מיילים שבועיים ---
 scheduler = BackgroundScheduler()
 scheduler.add_job(send_weekly_notifications, 'cron', day_of_week='thu', hour=13, minute=0)
