@@ -4,13 +4,12 @@ from email.mime.multipart import MIMEMultipart
 from database import get_db
 import datetime
 
-# הגדרות SMTP – הכנס כאן את הפרטים שלך
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_USER = "your_email@gmail.com"
-SMTP_PASS = "your_email_app_password"  # App Password של Gmail
+SMTP_PASS = "your_app_password"
 
-APP_BASE_URL = "http://127.0.0.1:5000"  # כתובת השרת שלך
+APP_BASE_URL = "https://class-cleaning.onrender.com"
 
 def send_weekly_notifications():
     db = get_db()
@@ -37,7 +36,6 @@ def send_weekly_notifications():
         unavailable_link = f"{APP_BASE_URL}/unavailable?name={name}&week={week}"
         register_link = f"{APP_BASE_URL}/register"
 
-        # בניית מייל HTML עם כפתורים
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"תורנות ניקיון לשבוע {week}"
         msg["From"] = SMTP_USER
@@ -76,7 +74,6 @@ def send_weekly_notifications():
         </body>
         </html>
         """
-
         msg.attach(MIMEText(html_content, "html"))
 
         try:

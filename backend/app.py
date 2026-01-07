@@ -2,14 +2,18 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from apscheduler.schedulers.background import BackgroundScheduler
 from scheduler import generate_weeks, assign_cleaners
-from database import save_schedule, get_db
+from database import save_schedule, get_db, init_db
 from notifications import send_weekly_notifications
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-# --- ROUTES קיימים ---
+# --- יצירת DB אם לא קיים ---
+if not os.path.exists("cleaning.db"):
+    init_db()
 
+# --- ROUTES קיימים ---
 @app.route("/health")
 def health():
     return {"status": "ok"}
@@ -47,7 +51,6 @@ def get_schedule():
     return jsonify(result)
 
 # --- UNAVAILABLE ---
-
 @app.route("/unavailable", methods=["POST", "GET"])
 def mark_unavailable():
     if request.method == "POST":
@@ -104,7 +107,6 @@ def mark_unavailable():
     return jsonify({"message": message})
 
 # --- REGISTER ROUTES ---
-
 @app.route("/register", methods=["GET"])
 def register_form():
     return render_template("register.html")
@@ -131,10 +133,9 @@ def register_user():
     return f"<h3>{message}</h3>"
 
 # --- APScheduler ---
-
 scheduler = BackgroundScheduler()
 scheduler.add_job(send_weekly_notifications, 'cron', day_of_week='thu', hour=13, minute=0)
 scheduler.start()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
