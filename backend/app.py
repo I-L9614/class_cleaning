@@ -54,6 +54,36 @@ def delete_user():
     db.close()
     return jsonify({"message": "User deleted"})
 
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    db = get_db()
+    cursor = db.cursor()
+    if request.method == "POST":
+        data = request.form
+        name = data.get("name")
+        email = data.get("email")
+        class_id = data.get("class_id")
+        cursor.execute("INSERT INTO users (name, email, class_id) VALUES (?, ?, ?)",
+                       (name, email, class_id))
+        db.commit()
+        db.close()
+        return "הרשמה בוצעה בהצלחה!"
+
+    # GET → להציג טופס
+    cursor.execute("SELECT id, name FROM classes")
+    classes = cursor.fetchall()
+    db.close()
+    html = "<h2>הרשמה לתורנות</h2>"
+    html += "<form method='post'>"
+    html += "שם: <input type='text' name='name' required><br>"
+    html += "אימייל: <input type='email' name='email' required><br>"
+    html += "כיתה: <select name='class_id'>"
+    for c in classes:
+        html += f"<option value='{c[0]}'>{c[1]}</option>"
+    html += "</select><br><button type='submit'>הרשם</button></form>"
+    return html
+
 # --- Classes --- #
 @app.route("/classes")
 def classes():
