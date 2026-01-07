@@ -151,6 +151,38 @@ def mark_unavailable():
 
     return jsonify({"message": message})
 
+@app.route("/delete_user", methods=["POST"])
+def delete_user():
+    data = request.json
+    user_id = data.get("id")
+    name = data.get("name")
+
+    if not user_id and not name:
+        return jsonify({"error": "Missing id or name"}), 400
+
+    db = get_db()
+    cursor = db.cursor()
+
+    if user_id:
+        cursor.execute("SELECT name FROM users WHERE id=?", (user_id,))
+    else:
+        cursor.execute("SELECT id FROM users WHERE name=?", (name,))
+    user = cursor.fetchone()
+
+    if not user:
+        db.close()
+        return jsonify({"error": "User not found"}), 404
+
+    if user_id:
+        cursor.execute("DELETE FROM users WHERE id=?", (user_id,))
+    else:
+        cursor.execute("DELETE FROM users WHERE name=?", (name,))
+    db.commit()
+    db.close()
+
+    return jsonify({"message": "User deleted successfully"})
+
+
 # --- ROUTES להרשמה ---
 @app.route("/register", methods=["GET"])
 def register_form():
