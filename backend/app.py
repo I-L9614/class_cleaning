@@ -50,6 +50,24 @@ def get_schedule():
         result[week].append(name)
     return jsonify(result)
 
+@app.route("/users", methods=["GET"])
+def get_users():
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, name, email FROM users ORDER BY id")
+    rows = cursor.fetchall()
+    db.close()
+
+    users_list = []
+    for user_id, name, email in rows:
+        users_list.append({
+            "id": user_id,
+            "name": name,
+            "email": email
+        })
+
+    return jsonify(users_list)
+
 # --- UNAVAILABLE ---
 @app.route("/unavailable", methods=["POST", "GET"])
 def mark_unavailable():
