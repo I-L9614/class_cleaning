@@ -3,11 +3,12 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from database import get_db
 import datetime
+import os
 
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-SMTP_USER = "your_email@gmail.com"
-SMTP_PASS = "your_app_password"
+SMTP_USER = os.environ.get("SMTP_USER")  # שמור את המייל כ-ENV
+SMTP_PASS = os.environ.get("SMTP_PASS")  # שמור את הסיסמה כ-ENV
 
 APP_BASE_URL = "https://class-cleaning.onrender.com"
 
@@ -15,7 +16,7 @@ def send_weekly_notifications():
     db = get_db()
     cursor = db.cursor()
     today = datetime.date.today()
-    week_start = today.strftime("%Y-%m-%d")
+    week_start = (today - datetime.timedelta(days=today.weekday())).strftime("%Y-%m-%d")
 
     cursor.execute("""
         SELECT u.name, u.email, a.week

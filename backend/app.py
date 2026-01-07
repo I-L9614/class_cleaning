@@ -9,109 +9,143 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# --- יצירת DB אם לא קיים ---
 if not os.path.exists("cleaning.db"):
     init_db()
 
-# --- ROUTES קיימים ---
 @app.route("/health")
 def health():
     return {"status": "ok"}
 
-@app.route("/schedule", methods=["GET"])
-def get_schedule():
+# --- הרשמה ---
+@app.route("/register", methods=["GET"])
+def register_form():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("""
-        SELECT a.week, u.name
-        FROM assignments a
-        JOIN users u ON a.user_id = u.id
-        ORDER BY a.week
-    """)
-    rows = cursor.fetchall()
+    cursor.execute("SELECT id, name FROM classes")
+    classes = cursor.fetchall()
     db.close()
-    result = {}
-    for week, name in rows:
-        if week not in result:
-            result[week] = []
-        result[week].append(name)
-    return jsonify(result)
+    return render_template("register.html", classes=classes)
 
-# --- Route להצגת כל המשתמשים ---
+@app.route("/register", methods=["POST"])
+def register_user():
+    name = request.form.get("name")
+    email = request.form.get("email")
+    class_id = request.form.get("class_id")
+    if not name or not email or not class_id:
+        return "<h3>חובה למלא שם, אימייל ובחירת כיתה</h3>", 400
+
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    user = cursor.fetchone()
+    if user:
+        message = "המשתמש כבר רשום."
+    else:
+        cursor.execute("INSERT INTO users (name, email, class_id) VALUES (?, ?, ?)", (name, email, class_id))
+        db.commit()
+        message = "הרשמתך בוצעה בהצלחה!"
+    db.close()
+    return f"<h3>{message}</h3>"
+
+# --- הרשמה קבועה / צפייה ביוסרס ---
 @app.route("/users", methods=["GET"])
 def get_users():
+    class_id = request.args.get("class_id")
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT id, name, email FROM users ORDER BY id")
+    if class_id:
+        cursor.execute("SELECT id, name, email, class_id FROM users WHERE class_id=? ORDER BY id", (class_id,))
+    else:
+        cursor.execute("SELECT id, name, email, class_id FROM users ORDER BY id")
     rows = cursor.fetchall()
     db.close()
+    return jsonify([{"id": uid, "name": name, "email": email, "class_id": cid} for uid, name, email, cid in rows])
 
-    users_list = []
-    for user_id, name, email in rows:
-        users_list.append({
-            "id": user_id,
-            "name": name,
-            "email": email
-        })
-
-    return jsonify(users_list)
-
-# --- Route להרצת הגרלה ידנית ---
-@app.route("/generate", methods=["POST"])
-def generate():
+# --- מחיקת משתמש ---
+@app.route("/delete_user", methods=["POST"])
+def delete_user():
     data = request.json
-    names = data.get("names", [])
-    start_date = data.get("start_date")
-    end_date = data.get("end_date")
-    if not names or not start_date or not end_date:
-        return jsonify({"error": "Missing names or dates"}), 400
-    weeks = generate_weeks(start_date, end_date)
-    schedule = assign_cleaners(names, weeks)
-    save_schedule(schedule)
-    return jsonify(schedule)
+    user_id = data.get("id")
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM users WHERE id=?", (user_id,))
+    db.commit()
+    db.close()
+    return jsonify({"message": "User deleted successfully"})
 
-# --- Route להרצת הגרלה אוטומטית מהמשתמשים שנרשמו ---
+# --- ניהול כיתות ---
+@app.route("/classes", methods=["GET"])
+def get_classes():
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, name FROM classes ORDER BY id")
+    rows = cursor.fetchall()
+    db.close()
+    return jsonify([{"id": cid, "name": name} for cid, name in rows])
+
+@app.route("/add_class", methods=["POST"])
+def add_class():
+    data = request.json
+    name = data.get("name")
+    admin_id = data.get("admin_id")
+    if not name or not admin_id:
+        return jsonify({"error": "Missing name or admin_id"}), 400
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        cursor.execute("INSERT INTO classes (name, created_by) VALUES (?, ?)", (name, admin_id))
+        db.commit()
+        message = "Class created successfully"
+    except:
+        message = "Class already exists"
+    db.close()
+    return jsonify({"message": message})
+
+@app.route("/delete_class", methods=["POST"])
+def delete_class():
+    data = request.json
+    class_id = data.get("class_id")
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM classes WHERE id=?", (class_id,))
+    db.commit()
+    db.close()
+    return jsonify({"message": "Class deleted successfully"})
+
+# --- הגרלה אוטומטית לפי כיתה ---
 @app.route("/generate_auto", methods=["POST"])
 def generate_auto():
     data = request.json
     start_date = data.get("start_date")
     end_date = data.get("end_date")
-
-    if not start_date or not end_date:
-        return jsonify({"error": "Missing start_date or end_date"}), 400
-
+    class_id = data.get("class_id")
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT name FROM users")
+    cursor.execute("SELECT name FROM users WHERE class_id=?", (class_id,))
     users = [row[0] for row in cursor.fetchall()]
     db.close()
-
     if not users:
-        return jsonify({"error": "No users registered"}), 400
-
+        return jsonify({"error": "No users in this class"}), 400
     weeks = generate_weeks(start_date, end_date)
     schedule = assign_cleaners(users, weeks)
-    save_schedule(schedule)
-
+    save_schedule(schedule, class_id)
     return jsonify(schedule)
 
-# --- Route למשתמשים שאינם זמינים ---
+# --- סימון לא זמין והחלפה ---
 @app.route("/unavailable", methods=["POST", "GET"])
 def mark_unavailable():
     if request.method == "POST":
         data = request.json
         user_name = data.get("name")
         week = data.get("week")
+        class_id = data.get("class_id")
     else:
         user_name = request.args.get("name")
         week = request.args.get("week")
-
-    if not user_name or not week:
-        return jsonify({"error": "Missing name or week"}), 400
-
+        class_id = request.args.get("class_id")
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT id FROM users WHERE name=?", (user_name,))
+    cursor.execute("SELECT id FROM users WHERE name=? AND class_id=?", (user_name, class_id))
     user = cursor.fetchone()
     if not user:
         db.close()
@@ -124,92 +158,31 @@ def mark_unavailable():
     """, (user_id, week))
     db.commit()
 
-    # מחפש מחליף
+    # החלפת תורן
     cursor.execute("""
         SELECT a.user_id
         FROM assignments a
         LEFT JOIN availability av ON a.user_id = av.user_id AND a.week = av.week
-        WHERE a.week = ? AND (av.available IS NULL OR av.available = 1) AND a.user_id != ?
-    """, (week, user_id))
+        WHERE a.week = ? AND a.class_id=? AND (av.available IS NULL OR av.available = 1) AND a.user_id != ?
+    """, (week, class_id, user_id))
     available_users = cursor.fetchall()
     if available_users:
         new_user_id = available_users[0][0]
         cursor.execute("""
             UPDATE assignments
             SET user_id = ?
-            WHERE week = ? AND user_id = ?
-        """, (new_user_id, week, user_id))
+            WHERE week = ? AND user_id = ? AND class_id=?
+        """, (new_user_id, week, user_id, class_id))
         db.commit()
-        message = f"{user_name} סומן כלא זמין והוחלף על ידי משתמש אחר."
+        message = f"{user_name} סומן כלא זמין והוחלף."
     else:
         message = f"{user_name} סומן כלא זמין, אך לא נמצא מחליף."
-
     db.close()
-
     if request.method == "GET":
         return f"<h2>{message}</h2>"
-
     return jsonify({"message": message})
 
-@app.route("/delete_user", methods=["POST"])
-def delete_user():
-    data = request.json
-    user_id = data.get("id")
-    name = data.get("name")
-
-    if not user_id and not name:
-        return jsonify({"error": "Missing id or name"}), 400
-
-    db = get_db()
-    cursor = db.cursor()
-
-    if user_id:
-        cursor.execute("SELECT name FROM users WHERE id=?", (user_id,))
-    else:
-        cursor.execute("SELECT id FROM users WHERE name=?", (name,))
-    user = cursor.fetchone()
-
-    if not user:
-        db.close()
-        return jsonify({"error": "User not found"}), 404
-
-    if user_id:
-        cursor.execute("DELETE FROM users WHERE id=?", (user_id,))
-    else:
-        cursor.execute("DELETE FROM users WHERE name=?", (name,))
-    db.commit()
-    db.close()
-
-    return jsonify({"message": "User deleted successfully"})
-
-
-# --- ROUTES להרשמה ---
-@app.route("/register", methods=["GET"])
-def register_form():
-    return render_template("register.html")
-
-@app.route("/register", methods=["POST"])
-def register_user():
-    name = request.form.get("name")
-    email = request.form.get("email")
-
-    if not name or not email:
-        return "חובה למלא שם ואימייל", 400
-
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT id FROM users WHERE name=? OR email=?", (name, email))
-    user = cursor.fetchone()
-    if user:
-        message = "המשתמש כבר רשום."
-    else:
-        cursor.execute("INSERT INTO users (name, email) VALUES (?, ?)", (name, email))
-        db.commit()
-        message = "הרשמתך בוצעה בהצלחה!"
-    db.close()
-    return f"<h3>{message}</h3>"
-
-# --- APScheduler לשליחת התראות שבועיות ---
+# --- APScheduler לשליחת מיילים שבועיים ---
 scheduler = BackgroundScheduler()
 scheduler.add_job(send_weekly_notifications, 'cron', day_of_week='thu', hour=13, minute=0)
 scheduler.start()

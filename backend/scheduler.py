@@ -7,14 +7,15 @@ def generate_weeks(start_date, end_date):
     weeks = []
     current = start
     while current <= end:
-        weeks.append(current.strftime("%Y-%m-%d"))
+        monday = current - datetime.timedelta(days=current.weekday())
+        weeks.append(monday.strftime("%Y-%m-%d"))
         current += datetime.timedelta(days=7)
     return weeks
 
-def assign_cleaners(names, weeks):
+def assign_cleaners(users, weeks):
     schedule = {}
     for week in weeks:
-        random.shuffle(names)
-        num_cleaners = min(max(4, len(names)), 5)
-        schedule[week] = names[:num_cleaners]
+        random.shuffle(users)
+        num_cleaners = min(5, max(4, len(users)))
+        schedule[week] = users[:num_cleaners]
     return schedule
