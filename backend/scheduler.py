@@ -1,21 +1,17 @@
-import datetime
-import random
+from apscheduler.schedulers.background import BackgroundScheduler
+from notifications import send_weekly_notifications
+from database import get_db
 
-def generate_weeks(start_date, end_date):
-    start = datetime.datetime.strptime(start_date, "%Y-%m-%d")
-    end = datetime.datetime.strptime(end_date, "%Y-%m-%d")
-    weeks = []
-    current = start
-    while current <= end:
-        monday = current - datetime.timedelta(days=current.weekday())
-        weeks.append(monday.strftime("%Y-%m-%d"))
-        current += datetime.timedelta(days=7)
-    return weeks
+def start_scheduler():
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT value FROM settings WHERE key='notify_hour'")
+    notify_hour = int(cur.fetchone()["value"])
+    cur.execute("SELECT value FROM settings WHERE key='notify_minute'")
+    notify_minute = int(cur.fetchone()["value"])
+    db.close()
 
-def assign_cleaners(users, weeks):
-    schedule = {}
-    for week in weeks:
-        random.shuffle(users)
-        num_cleaners = min(5, max(4, len(users)))
-        schedule[week] = users[:num_cleaners]
-    return schedule
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(send_weekly_notifications, 'cron', day_of_week='thu', hour=notify_hour, minute=notify_minute)
+    scheduler.start()
+    print("Scheduler started")

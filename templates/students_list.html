@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>רשימת תלמידים</title>
+</head>
+<body>
+<h2>תלמידים בכיתה {{ class_name }}</h2>
+<table border="1">
+    <tr><th>שם</th><th>אימייל</th></tr>
+    {% for student in students %}
+    <tr>
+        <td>{{ student.name }}</td>
+        <td>{{ student.email }}</td>
+    </tr>
+    {% endfor %}
+</table>
+</body>
+</html>

@@ -2,79 +2,63 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from database import get_db
-import datetime
 import os
+from datetime import datetime
 
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-SMTP_USER = os.environ.get("SMTP_USER")  # שמור את המייל כ-ENV
-SMTP_PASS = os.environ.get("SMTP_PASS")  # שמור את הסיסמה כ-ENV
-
-APP_BASE_URL = "https://class-cleaning.onrender.com"
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASS = os.getenv("SMTP_PASS")
+APP_BASE_URL = "http://localhost:5000"
 
 def send_weekly_notifications():
     db = get_db()
-    cursor = db.cursor()
-    today = datetime.date.today()
-    week_start = (today - datetime.timedelta(days=today.weekday())).strftime("%Y-%m-%d")
+    cur = db.cursor()
+    today = datetime.today().strftime("%Y-%m-%d")
 
-    cursor.execute("""
-        SELECT u.name, u.email, a.week
+    cur.execute("""
+        SELECT u.name, u.email, a.week_start, s.name as class_name
         FROM assignments a
-        JOIN users u ON a.user_id = u.id
-        WHERE a.week = ?
-    """, (week_start,))
-    rows = cursor.fetchall()
+        JOIN students u ON a.student_id = u.id
+        JOIN classes s ON u.class_id = s.id
+        WHERE a.week_start=?
+    """, (today,))
+    rows = cur.fetchall()
     db.close()
 
     if not rows:
         return
 
-    for name, email, week in rows:
+    for name, email, week, class_name in rows:
         if not email:
             continue
 
         unavailable_link = f"{APP_BASE_URL}/unavailable?name={name}&week={week}"
-        register_link = f"{APP_BASE_URL}/register"
-
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"תורנות ניקיון לשבוע {week}"
-        msg["From"] = SMTP_USER
-        msg["To"] = email
-
         html_content = f"""
         <html>
         <body>
             <p>שלום {name},</p>
-            <p>אתה תורן לניקיון הכיתה השבוע ({week}).</p>
-            <p>אם אינך זמין השבוע, לחץ על הכפתור למטה:</p>
+            <p>אתה תורן ניקיון לשבוע {week} בכיתה {class_name}.</p>
+            <p>אם אינך יכול השבוע, לחץ על הכפתור למטה:</p>
             <p>
                 <a href="{unavailable_link}" style="
                     display:inline-block;
                     padding:10px 20px;
                     font-size:16px;
                     color:white;
-                    background-color:#007bff;
+                    background-color:#dc3545;
                     text-decoration:none;
                     border-radius:5px;
-                ">לא זמין השבוע</a>
+                ">לא יכול השבוע</a>
             </p>
-            <p>אם עדיין לא רשמת את עצמך, לחץ כאן להרשמה:</p>
-            <p>
-                <a href="{register_link}" style="
-                    display:inline-block;
-                    padding:10px 20px;
-                    font-size:16px;
-                    color:white;
-                    background-color:#28a745;
-                    text-decoration:none;
-                    border-radius:5px;
-                ">הרשם לתורנות</a>
-            </p>
-            <p>תודה!</p>
         </body>
         </html>
         """
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"תורנות ניקיון לשבוע {week}"
+        msg["From"] = SMTP_USER
+        msg["To"] = email
         msg.attach(MIMEText(html_content, "html"))
 
         try:
