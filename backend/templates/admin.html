@@ -8,6 +8,7 @@
 <body class="bg-light p-3">
     <h2>לוח מנהל</h2>
 
+    <!-- --- יצירת הגרלה --- -->
     <h4>צור הגרלה לתורנות</h4>
     <form id="generate-form" class="mb-4 p-3 bg-white rounded shadow-sm">
         <div class="mb-2">
@@ -25,11 +26,20 @@
         <button type="submit" class="btn btn-primary mt-2">צור הגרלה</button>
     </form>
 
+    <!-- --- ניהול כיתות --- -->
+    <h4>ניהול כיתות</h4>
+    <form id="add-class-form" class="mb-3">
+        <input type="text" id="new-class-name" placeholder="שם כיתה חדשה" required>
+        <button type="submit" class="btn btn-success">הוסף כיתה</button>
+    </form>
+    <div id="classes-table" class="mb-4"></div>
+
+    <!-- --- ניהול משתמשים --- -->
     <h4>תורנים</h4>
     <div id="users-table"></div>
 
     <script>
-        // טען כיתות ל-dropdown
+        // --- טעינת כיתות ל-dropdown והטבלה --- //
         async function loadClassesDropdown() {
             const res = await fetch("/classes");
             const classes = await res.json();
@@ -43,7 +53,41 @@
             });
         }
 
-        // טען את המשתמשים בטבלה
+        async function loadClassesTable() {
+            const res = await fetch("/classes");
+            const classes = await res.json();
+            const container = document.getElementById("classes-table");
+            container.innerHTML = "<table class='table table-striped'><tr><th>שם כיתה</th><th>מחיקה</th></tr>" +
+                classes.map(c => `<tr>
+                    <td>${c.name}</td>
+                    <td><button class="btn btn-sm btn-danger" onclick="deleteClass(${c.id})">מחק</button></td>
+                </tr>`).join("") + "</table>";
+        }
+
+        async function deleteClass(id) {
+            await fetch("/delete_class", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({id})
+            });
+            loadClassesTable();
+            loadClassesDropdown();
+        }
+
+        document.getElementById("add-class-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("new-class-name").value;
+            await fetch("/add_class", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({name})
+            });
+            document.getElementById("new-class-name").value = "";
+            loadClassesTable();
+            loadClassesDropdown();
+        });
+
+        // --- טבלת משתמשים --- //
         async function loadUsers() {
             const res = await fetch("/users");
             const users = await res.json();
@@ -57,7 +101,6 @@
                 </tr>`).join("") + "</table>";
         }
 
-        // מחיקת משתמש
         async function deleteUser(id) {
             await fetch("/delete_user", {
                 method: "POST",
@@ -67,7 +110,7 @@
             loadUsers();
         }
 
-        // טיפול בהגרלה
+        // --- טיפול בהגרלה --- //
         document.getElementById("generate-form").addEventListener("submit", async (e) => {
             e.preventDefault();
             const class_id = document.getElementById("class-select").value;
@@ -89,6 +132,7 @@
         });
 
         loadClassesDropdown();
+        loadClassesTable();
         loadUsers();
     </script>
 </body>

@@ -5,12 +5,12 @@ from notifications import send_weekly_notifications
 
 app = Flask(__name__)
 
-# Route ל-admin
+# --- Routes --- #
+
 @app.route("/admin")
 def admin_panel():
     return render_template("admin.html")
 
-# Route ליצירת הגרלה לפי כיתה וטווח תאריכים
 @app.route("/generate_schedule", methods=["POST"])
 def generate_schedule():
     data = request.json
@@ -33,7 +33,7 @@ def generate_schedule():
 
     return jsonify({"message": "הגרלה נוצרה בהצלחה", "schedule": schedule})
 
-# Route לכל המשתמשים
+# --- Users --- #
 @app.route("/users")
 def users():
     db = get_db()
@@ -43,17 +43,6 @@ def users():
     db.close()
     return jsonify([{"id": r[0], "name": r[1], "email": r[2], "class_id": r[3]} for r in rows])
 
-# Route לכל הכיתות
-@app.route("/classes")
-def classes():
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT id, name FROM classes")
-    rows = cursor.fetchall()
-    db.close()
-    return jsonify([{"id": r[0], "name": r[1]} for r in rows])
-
-# מחיקת משתמש
 @app.route("/delete_user", methods=["POST"])
 def delete_user():
     data = request.json
@@ -65,6 +54,39 @@ def delete_user():
     db.close()
     return jsonify({"message": "User deleted"})
 
+# --- Classes --- #
+@app.route("/classes")
+def classes():
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, name FROM classes")
+    rows = cursor.fetchall()
+    db.close()
+    return jsonify([{"id": r[0], "name": r[1]} for r in rows])
+
+@app.route("/add_class", methods=["POST"])
+def add_class():
+    data = request.json
+    name = data.get("name")
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("INSERT INTO classes (name) VALUES (?)", (name,))
+    db.commit()
+    db.close()
+    return jsonify({"message": "כיתה נוספה"})
+
+@app.route("/delete_class", methods=["POST"])
+def delete_class():
+    data = request.json
+    class_id = data.get("id")
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM classes WHERE id=?", (class_id,))
+    db.commit()
+    db.close()
+    return jsonify({"message": "כיתה נמחקה"})
+
+# --- Scheduler --- #
 if __name__ == "__main__":
     from apscheduler.schedulers.background import BackgroundScheduler
     scheduler = BackgroundScheduler()
