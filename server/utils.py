@@ -1,4 +1,5 @@
-from models import Students, Classes
+from server.models import Students, Classes
+
 import random
 
 def run_lottery(class_id):
