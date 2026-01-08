@@ -1,6 +1,7 @@
 from flask import Flask
-from routes.admin_routes import admin_bp
-from routes.student_routes import student_bp
+from server.routes.admin_routes import admin_bp
+from server.routes.student_routes import student_bp
+
 from flask import render_template
 from flask_wtf.csrf import CSRFProtect
 import os

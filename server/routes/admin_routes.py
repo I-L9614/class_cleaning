@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from models import Classes, Students, Admins
-from utils import run_lottery, hash_password, verify_password
+from server.models import Classes, Students, Admins
+from server.utils import run_lottery, hash_password, verify_password
 admin_bp = Blueprint('admin', __name__, template_folder='../templates')
 
 # Login/logout

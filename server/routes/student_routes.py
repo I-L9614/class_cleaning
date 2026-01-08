@@ -1,5 +1,5 @@
 from flask import Blueprint, request, render_template, redirect, url_for, flash
-from models import Students, Classes
+from server.models import Students, Classes
 student_bp = Blueprint('student', __name__, template_folder='../templates')
 
 @student_bp.route('/register', methods=['GET', 'POST'])
