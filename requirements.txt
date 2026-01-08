@@ -1,6 +1,12 @@
 Flask==2.3.3
-pymongo==4.5.1
-Flask-Mail==0.9.1
-Flask-WTF==1.1.1
-dnspython==2.3.0
-apscheduler==3.10.4
+gunicorn==21.2.0
+
+# MongoDB
+pymongo==4.5.0
+dnspython==2.4.2
+
+# Worker / scheduling
+APScheduler==3.10.4
+
+# Optional but common
+python-dotenv==1.0.0
