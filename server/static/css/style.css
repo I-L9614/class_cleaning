@@ -1,0 +1,81 @@
+/* --- עיצוב כללי --- */
+body { 
+    font-family: Arial, sans-serif; 
+    background: #f2f2f2; 
+    padding: 20px; 
+}
+
+form { 
+    margin-bottom: 20px; 
+}
+
+input, select, button { 
+    padding: 8px; 
+    margin: 5px; 
+    font-size: 1em;
+}
+
+/* --- טבלאות --- */
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-top: 20px;
+}
+
+th, td { 
+    border: 1px solid #ccc; 
+    padding: 8px; 
+    text-align: center; 
+}
+
+th { 
+    background-color: #333; 
+    color: #fff; 
+}
+
+tr:nth-child(even) { 
+    background-color: #eee; 
+}
+
+/* --- הודעות Flash --- */
+#flash-messages li { 
+    list-style: none; 
+    padding: 5px; 
+    margin:5px; 
+    border-radius: 3px;
+}
+
+.success { 
+    background: #4CAF50; 
+    color: white;
+}
+
+.danger { 
+    background: #f44336; 
+    color: white;
+}
+
+/* --- סטטוס תלמידים / כפתורים --- */
+.available { 
+    background-color: #d4edda;   /* ירוק – תורן */
+}
+
+.unavailable { 
+    background-color: #f8d7da; /* אדום – לא יכול */
+}
+
+.cannot-btn { 
+    margin-top: 5px; 
+    padding: 4px 8px; 
+    font-size: 0.9em; 
+    cursor: pointer; 
+    border: none;
+    border-radius: 3px;
+    background-color: #ff9800; 
+    color: white;
+    transition: background 0.3s;
+}
+
+.cannot-btn:hover {
+    background-color: #e68a00;
+}

@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: cleaning-app-web
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server/app.py
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: MONGO_URI
+        value: ${MONGO_URI}
+      - key: MAIL_USER
+        value: ${MAIL_USER}
+      - key: MAIL_PASS
+        value: ${MAIL_PASS}
+      - key: SECRET_KEY
+        value: ${SECRET_KEY}
+
+  - type: worker
+    name: cleaning-app-worker
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server/worker.py
+    envVars:
+      - key: MONGO_URI
+        value: ${MONGO_URI}
+      - key: MAIL_USER
+        value: ${MAIL_USER}
+      - key: MAIL_PASS
+        value: ${MAIL_PASS}

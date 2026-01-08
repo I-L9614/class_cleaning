@@ -1,0 +1,6 @@
+Flask==2.3.5
+pymongo==4.5.1
+Flask-Mail==0.9.1
+Flask-WTF==1.1.1
+dnspython==2.3.0
+apscheduler==3.10.4

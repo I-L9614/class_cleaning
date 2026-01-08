@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+{% if login %}
+<h2>Login Admin</h2>
+<form method="POST">
+    <input type="email" name="email" placeholder="אימייל">
+    <input type="password" name="password" placeholder="סיסמה">
+    <button type="submit">Login</button>
+</form>
+{% else %}
+<h2>Dashboard Admin</h2>
+<form method="POST" action="{{ url_for('admin.create_class') }}">
+    <input type="text" name="name" placeholder="שם כיתה">
+    <button type="submit">צור כיתה</button>
+</form>
+
+<table>
+    <tr>
+        <th>כיתה</th>
+        <th>פעולות</th>
+    </tr>
+    {% for cls in classes %}
+    <tr>
+        <td>{{ cls.name }}</td>
+        <td>
+            <a href="{{ url_for('admin.run_class_lottery', class_id=cls._id) }}">הרץ הגרלה</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+<a href="{{ url_for('admin.logout') }}">Logout</a>
+{% endif %}
+{% endblock %}
+<td>
+  <button class="run-lottery-btn" data-class-id="{{ cls._id }}">הרץ הגרלה</button>
+</td>

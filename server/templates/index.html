@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>ברוכים הבאים למערכת ניהול התורנות בכיתה</h1>
+<p>להרשמת תלמיד חדש לחץ כאן:</p>
+<a href="{{ url_for('student.register') }}"><button>הרשמה לתלמיד</button></a>
+
+<p>לכניסה למערכת ניהול (Admin) לחץ כאן:</p>
+<a href="{{ url_for('admin.login') }}"><button>כניסה למנהל</button></a>
+{% endblock %}

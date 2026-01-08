@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>פרטי כיתה: {{ cls.name }}</h2>
+
+<h3>רשימת תלמידים ותורנויות:</h3>
+<table id="class-table">
+    <thead>
+        <tr>
+            <th>שם</th>
+            <th>אימייל</th>
+            {% for week in weeks %}
+            <th>שבוע {{ week }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for student in students %}
+        <tr>
+            <td>{{ student.name }}</td>
+            <td>{{ student.email }}</td>
+            {% for week in weeks %}
+            {% set status = student.weeks.get(week, 'לא תורן') %}
+            <td class="{{ 'unavailable' if status=='לא יכול' else 'available' }}">
+                {{ status }}
+                {% if status != 'לא יכול' %}
+                <button class="cannot-btn" data-student="{{ student._id }}" data-week="{{ week }}">לא יכול השבוע</button>
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('admin.dashboard') }}"><button>חזרה ל-Dashboard</button></a>
+{% endblock %}
